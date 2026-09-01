@@ -5,7 +5,7 @@
   "description": "Locly — rental marketplace with verified video inspections, reputation and disputes.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node -r ./security-center.js server.js",
     "dev": "node --watch server.js"
   },
   "engines": { "node": ">=20" },
