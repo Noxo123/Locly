@@ -1,1 +1,45 @@
-<!doctype html><html lang="fr"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="theme-color" content="#0F3554"/><meta name="description" content="Locly — marketplace de location de matériel."/><title>Locly — Louez en toute confiance</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/styles.css"/></head><body><div class="announcement">🔐 Location vérifiée · Paiements sécurisés · Avis issus de vraies locations</div><header class="topbar"><div class="nav-inner"><a class="brand" href="#/home" aria-label="Locly accueil"><span class="brand-mark">L</span><span>locly</span></a><nav class="main-nav"><a href="#/browse">Explorer</a><a href="#/how">Comment ça marche</a><a href="#/publish">Publier</a><a href="#/admin" class="admin-link" hidden>Administration</a></nav><div id="auth-actions" class="auth-actions"></div></div></header><main id="app"></main><footer class="site-footer"><div class="footer-inner"><div class="footer-grid"><div><a class="brand brand-footer" href="#/home"><span class="brand-mark">L</span><span>locly</span></a><p class="footer-description">Le marketplace de location de matériel près de chez vous.</p><span class="footer-trust">🛡️ Marketplace de confiance</span></div><div class="footer-column"><h3>Explorer</h3><a href="#/browse">Tout le matériel</a><a href="#/browse?category=Événementiel">Événementiel</a><a href="#/browse?category=Outillage">Outillage</a><a href="#/browse?category=Camping">Camping</a></div><div class="footer-column"><h3>Locly</h3><a href="#/how">Comment ça marche</a><a href="#/publish">Publier une annonce</a><a href="#/dashboard">Mon espace</a><a href="#/admin" class="admin-link" hidden>Administration</a></div><div class="footer-column"><h3>Confiance</h3><a href="#/how">Protection</a><a href="#/how">Sécurité</a><a href="#/how">Aide</a></div></div><div class="footer-bottom"><span>© 2026 Locly · Louez en toute confiance</span><div class="footer-bottom-links"><a href="#/how">Conditions</a><a href="#/how">Confidentialité</a><a href="#/how">Contact</a></div></div></div></footer><script src="/app.js"></script><script src="/city-picker.js"></script><script src="/admin-router.js"></script><script src="/admin-entry.js"></script><script src="/presence.js"></script><script src="/marketplace-home.js"></script></body></html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0F3554">
+<meta name="description" content="Locly — marketplace de location de matériel près de chez vous.">
+<title>Locly — Louez en toute confiance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="announcement">🛡️ Location vérifiée · Paiements sécurisés · Avis issus de vraies locations</div>
+<header class="topbar">
+  <div class="nav-inner">
+    <a class="brand" href="#/home" aria-label="Locly accueil"><span class="brand-mark">L</span><span>locly</span></a>
+    <nav class="main-nav" aria-label="Navigation principale">
+      <a href="#/home">Accueil</a><a href="#/browse">Explorer</a><a href="#/publish">Publier</a><a href="#/how">Comment ça marche</a>
+      <a href="#/admin" class="admin-link" hidden>Administration</a>
+    </nav>
+    <div id="auth-actions" class="auth-actions"></div>
+  </div>
+</header>
+<main id="app" class="app-shell"></main>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div><a class="brand brand-footer" href="#/home"><span class="brand-mark">L</span><span>locly</span></a><p class="footer-description">La marketplace locale pour louer du matériel simplement et en confiance.</p></div>
+      <div class="footer-column"><h3>Explorer</h3><a href="#/browse">Toutes les annonces</a><a href="#/browse?category=Événementiel">Événementiel</a><a href="#/browse?category=Outillage">Outillage</a><a href="#/browse?category=Camping">Camping</a></div>
+      <div class="footer-column"><h3>Locly</h3><a href="#/publish">Publier une annonce</a><a href="#/dashboard">Mon espace</a><a href="#/how">Comment ça marche</a><a href="#/admin" class="admin-link" hidden>Administration</a></div>
+      <div class="footer-column"><h3>Confiance</h3><a href="#/how">Protection</a><a href="#/how">Sécurité</a><a href="#/how">Aide</a></div>
+    </div>
+    <div class="footer-bottom"><span>© 2026 Locly · Louez en toute confiance</span><div class="footer-bottom-links"><a href="#/how">Conditions</a><a href="#/how">Confidentialité</a><a href="#/how">Contact</a></div></div>
+  </div>
+</footer>
+<script src="/app.js"></script>
+<script src="/city-picker.js"></script>
+<script src="/admin-router.js"></script>
+<script src="/admin-entry.js"></script>
+<script src="/presence.js"></script>
+<script src="/marketplace-home.js"></script>
+</body>
+</html>
