@@ -1,126 +1,24 @@
 (() => {
-  const app = document.querySelector('#app');
-  if (!app) return;
-  const token = () => localStorage.getItem('locly_token');
-  const esc = (v='') => String(v).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
-  const api = async (path) => {
-    const r = await fetch('/api' + path, { headers: token() ? {Authorization:'Bearer '+token()} : {} });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || 'Erreur serveur');
-    return d;
-  };
-  const categories = ['Toutes','Événementiel','Outillage','Camping','Sono','Photo & vidéo','Mobilier','Vélo','Véhicule','Chantier','Autre'];
-  let listings = [];
-  let favorites = JSON.parse(localStorage.getItem('locly_favorites') || '[]');
-  let state = {q:'', city:'', category:'Toutes', min:'', max:'', sort:'recent', radius:'50'};
-
-  const icon = c => ({'Événementiel':'🎪','Outillage':'🛠️','Camping':'⛺','Sono':'🔊','Photo & vidéo':'📷','Mobilier':'🪑','Vélo':'🚲','Véhicule':'🚐','Chantier':'🚧'}[c] || '📦');
-  const money = n => `${Number(n || 0).toFixed(0)} €`;
-
-  function card(l) {
-    const saved = favorites.includes(l.id);
-    const rating = Number(l.owner_rating || 0);
-    return `<article class="market-listing-card">
-      <a class="market-listing-image" href="#/listing/${encodeURIComponent(l.id)}" aria-label="Voir ${esc(l.title)}"><span>${icon(l.category)}</span><button class="market-favorite ${saved?'is-saved':''}" type="button" onclick="event.preventDefault();event.stopPropagation();window.toggleLoclyFavorite(${Number(l.id)})" aria-label="${saved?'Retirer des favoris':'Ajouter aux favoris'}">${saved?'♥':'♡'}</button></a>
-      <div class="market-listing-body">
-        <div class="market-listing-category">${esc(l.category || 'Matériel')} ${l.owner_trust >= 70 ? '<span>✓ Loueur vérifié</span>' : ''}</div>
-        <a class="market-listing-title" href="#/listing/${encodeURIComponent(l.id)}">${esc(l.title)}</a>
-        <div class="market-listing-price">${money(l.price)} <small>/ jour</small></div>
-        <div class="market-listing-meta"><span>📍 ${esc(l.city || 'France')}</span><span>⭐ ${rating ? rating.toFixed(1) : 'Nouveau'}</span></div>
-        <div class="market-listing-footer"><span>${l.owner_trust ? `Confiance ${Math.round(l.owner_trust)}/100` : 'Nouveau loueur'}</span><a href="#/listing/${encodeURIComponent(l.id)}">Voir l'annonce →</a></div>
-      </div>
-    </article>`;
+  const app = document.querySelector('#app'); if (!app) return;
+  const token=()=>localStorage.getItem('locly_token');
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const api=async p=>{const r=await fetch('/api'+p,{headers:token()?{Authorization:'Bearer '+token()}: {}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||'Erreur serveur');return d};
+  const cats=[['Toutes','▦'],['Outillage','🛠'],['Événementiel','🎪'],['Camping','⛺'],['Sono','🔊'],['Photo & vidéo','📷'],['Mobilier','🪑'],['Vélo','🚲'],['Véhicule','🚐'],['Chantier','🚧'],['Autre','📦']];
+  let listings=[],fav=JSON.parse(localStorage.getItem('locly_favorites')||'[]'),state={q:'',city:'',category:'Toutes',min:'',max:'',sort:'recent'};
+  const money=n=>`${Number(n||0).toLocaleString('fr-FR')} €`;
+  const icon=c=>(cats.find(x=>x[0]===c)||cats.at(-1))[1];
+  function render(){
+    const q=state.q.toLowerCase(); let data=listings.filter(l=>(!q||`${l.title||''} ${l.description||''} ${l.category||''}`.toLowerCase().includes(q))&&(!state.city||String(l.city||'').toLowerCase().includes(state.city.toLowerCase()))&&(state.category==='Toutes'||l.category===state.category)&&(!state.min||Number(l.price)>=Number(state.min))&&(!state.max||Number(l.price)<=Number(state.max)));
+    data.sort((a,b)=>state.sort==='price_asc'?Number(a.price)-Number(b.price):state.sort==='price_desc'?Number(b.price)-Number(a.price):state.sort==='rating'?Number(b.owner_rating||0)-Number(a.owner_rating||0):Number(b.id)-Number(a.id));
+    const count=document.querySelector('#locly-count');if(count)count.textContent=`${data.length} annonce${data.length>1?'s':''}`;
+    const grid=document.querySelector('#locly-grid');if(!grid)return;
+    grid.innerHTML=data.length?data.map(l=>{const saved=fav.includes(l.id);return `<article class="lc-card"><a class="lc-photo" href="#/listing/${encodeURIComponent(l.id)}"><div class="lc-photo-placeholder">${icon(l.category)}</div><span class="lc-category">${esc(l.category||'Matériel')}</span><button class="lc-fav ${saved?'saved':''}" onclick="event.preventDefault();event.stopPropagation();window.loclyFav(${Number(l.id)})">${saved?'♥':'♡'}</button></a><div class="lc-card-body"><a class="lc-title" href="#/listing/${encodeURIComponent(l.id)}">${esc(l.title)}</a><div class="lc-price">${money(l.price)} <small>/ jour</small></div><div class="lc-info"><span>📍 ${esc(l.city||'France')}</span><span>⭐ ${l.owner_rating?Number(l.owner_rating).toFixed(1):'Nouveau'}</span></div>${l.owner_trust>=70?'<div class="lc-verified">✓ Loueur vérifié</div>':''}</div></article>`}).join(''):`<div class="lc-empty"><div>🔎</div><h2>Aucune annonce</h2><p>Modifie ta recherche ou enlève quelques filtres.</p><button class="lc-button secondary" onclick="window.loclyReset()">Réinitialiser</button></div>`;
   }
-
-  function shell() {
-    app.innerHTML = `<div class="marketplace-feed">
-      <div class="market-feed-container">
-        <section class="market-search-panel">
-          <div class="market-search-main">
-            <div class="market-search-input"><span>⌕</span><input id="ml-q" value="${esc(state.q)}" placeholder="Que recherchez-vous ?" autocomplete="off"></div>
-            <div class="market-search-input market-location-input"><span>⌖</span><input id="ml-city" value="${esc(state.city)}" placeholder="Ville, code postal" autocomplete="off"><button id="ml-geolocate" type="button" title="Utiliser ma position">◎</button></div>
-            <button id="ml-search" class="market-search-submit" type="button">Rechercher</button>
-          </div>
-          <div class="market-search-bottom"><button id="ml-filter-open" class="market-filter-button" type="button">☷ Filtres <b id="ml-filter-count"></b></button><div class="market-active-filters" id="ml-active-filters"></div><button id="ml-clear" class="market-clear" type="button">Réinitialiser</button></div>
-        </section>
-
-        <section class="market-results-head">
-          <div><div class="market-results-kicker">MARKETPLACE</div><h1>Toutes les annonces</h1><p id="ml-count">Chargement des annonces…</p></div>
-          <label class="market-sort">Trier par <select id="ml-sort"><option value="recent">Plus récentes</option><option value="price_asc">Prix croissant</option><option value="price_desc">Prix décroissant</option><option value="rating">Meilleures notes</option></select></label>
-        </section>
-
-        <section class="market-results-layout">
-          <aside class="market-filters" id="ml-filters">
-            <div class="market-filter-head"><strong>Filtres</strong><button id="ml-filter-close" type="button">×</button></div>
-            <div class="market-filter-group"><label>Catégorie</label><select id="ml-category">${categories.map(c=>`<option ${state.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
-            <div class="market-filter-group"><label>Localisation</label><input id="ml-filter-city" value="${esc(state.city)}" placeholder="Ville ou code postal"><label class="small-label">Rayon</label><select id="ml-radius"><option value="5">5 km</option><option value="10">10 km</option><option value="25">25 km</option><option value="50" selected>50 km</option><option value="100">100 km</option></select></div>
-            <div class="market-filter-group"><label>Prix / jour</label><div class="market-price-fields"><input id="ml-min" value="${esc(state.min)}" type="number" min="0" placeholder="Min €"><span>—</span><input id="ml-max" value="${esc(state.max)}" type="number" min="0" placeholder="Max €"></div></div>
-            <button id="ml-apply" class="market-apply" type="button">Afficher les résultats</button>
-          </aside>
-          <div class="market-results"><div class="market-results-grid" id="ml-grid"><div class="market-loading">Chargement…</div></div><div class="market-pagination" id="ml-pagination"></div></div>
-        </section>
-      </div>
-    </div>`;
-    bind();
-    load();
-  }
-
-  function bind() {
-    document.querySelector('#ml-search').onclick = applySearch;
-    document.querySelector('#ml-apply').onclick = () => { syncState(); closeFilters(); applySearch(); };
-    document.querySelector('#ml-filter-open').onclick = () => document.querySelector('#ml-filters').classList.add('open');
-    document.querySelector('#ml-filter-close').onclick = closeFilters;
-    document.querySelector('#ml-clear').onclick = () => { state={q:'',city:'',category:'Toutes',min:'',max:'',sort:'recent',radius:'50'}; shell(); };
-    document.querySelector('#ml-sort').onchange = e => { state.sort=e.target.value; render(); };
-    document.querySelector('#ml-geolocate').onclick = geolocate;
-    ['ml-q','ml-city'].forEach(id => document.querySelector('#'+id).addEventListener('keydown', e => { if(e.key==='Enter') applySearch(); }));
-    updateFilterUI();
-  }
-  function syncState() {
-    state.q = document.querySelector('#ml-q')?.value.trim() || '';
-    state.city = document.querySelector('#ml-city')?.value.trim() || document.querySelector('#ml-filter-city')?.value.trim() || '';
-    state.category = document.querySelector('#ml-category')?.value || 'Toutes';
-    state.min = document.querySelector('#ml-min')?.value || '';
-    state.max = document.querySelector('#ml-max')?.value || '';
-    state.radius = document.querySelector('#ml-radius')?.value || '50';
-  }
-  function applySearch() { syncState(); closeFilters(); render(); updateFilterUI(); }
-  function closeFilters() { document.querySelector('#ml-filters')?.classList.remove('open'); }
-  function updateFilterUI() {
-    const active=[state.category!=='Toutes',!!state.city,!!state.min,!!state.max].filter(Boolean).length;
-    const c=document.querySelector('#ml-filter-count'); if(c)c.textContent=active?`(${active})`:'';
-    const a=document.querySelector('#ml-active-filters'); if(a)a.innerHTML=[state.category!=='Toutes'?state.category:'',state.city?`📍 ${esc(state.city)}`:'',state.min?`≥ ${state.min} €`:'',state.max?`≤ ${state.max} €`:'' ].filter(Boolean).map(x=>`<span>${x}</span>`).join('');
-  }
-
-  async function load() {
-    try { const d=await api('/listings'); listings=d.listings||[]; render(); }
-    catch(e) { const g=document.querySelector('#ml-grid'); if(g)g.innerHTML=`<div class="market-empty"><strong>Impossible de charger les annonces</strong><p>${esc(e.message)}</p><button class="btn btn-primary" onclick="location.reload()">Réessayer</button></div>`; }
-  }
-  function render() {
-    let data=listings.filter(l=>{
-      const q=state.q.toLowerCase(); const title=`${l.title||''} ${l.description||''} ${l.category||''}`.toLowerCase();
-      const price=Number(l.price||0);
-      return (!q||title.includes(q)) && (!state.city || String(l.city||'').toLowerCase().includes(state.city.toLowerCase())) && (state.category==='Toutes'||l.category===state.category) && (!state.min||price>=Number(state.min)) && (!state.max||price<=Number(state.max));
-    });
-    data.sort((a,b)=> state.sort==='price_asc'?Number(a.price)-Number(b.price):state.sort==='price_desc'?Number(b.price)-Number(a.price):state.sort==='rating'?Number(b.owner_rating||0)-Number(a.owner_rating||0):Number(b.id)-Number(a.id));
-    const count=document.querySelector('#ml-count'); if(count)count.textContent=`${data.length} annonce${data.length>1?'s':''}${state.city?' près de '+state.city:''}`;
-    const grid=document.querySelector('#ml-grid'); if(grid)grid.innerHTML=data.length?data.map(card).join(''):`<div class="market-empty"><div class="market-empty-icon">⌕</div><strong>Aucune annonce trouvée</strong><p>Essayez une autre recherche ou élargissez vos filtres.</p><button class="btn btn-light" onclick="document.querySelector('#ml-clear').click()">Effacer les filtres</button></div>`;
-    updateFilterUI();
-  }
-  async function geolocate() {
-    if(!navigator.geolocation) return alert('La géolocalisation n’est pas disponible sur cet appareil.');
-    const btn=document.querySelector('#ml-geolocate'); btn.textContent='…';
-    navigator.geolocation.getCurrentPosition(async pos=>{
-      try {
-        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=10&addressdetails=1`,{headers:{'Accept-Language':'fr'}});
-        const d=await r.json(); const a=d.address||{}; const city=a.city||a.town||a.village||a.municipality||''; const cp=a.postcode||'';
-        const value=[city,cp].filter(Boolean).join(' '); state.city=value; const i=document.querySelector('#ml-city'); const f=document.querySelector('#ml-filter-city'); if(i)i.value=value;if(f)f.value=value; render(); updateFilterUI();
-      } catch { alert('Impossible de déterminer votre ville.'); }
-      btn.textContent='◎';
-    },()=>{btn.textContent='◎';alert('Autorisez la localisation dans votre navigateur pour utiliser cette fonction.');},{enableHighAccuracy:false,timeout:8000});
-  }
-  window.toggleLoclyFavorite=id=>{favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];localStorage.setItem('locly_favorites',JSON.stringify(favorites));render();};
-  function isHome(){return (location.hash.split('?')[0]||'#/home')==='#/home'||location.hash===''||location.hash==='#';}
-  let last=''; function sync(){if(!isHome())return; if(location.hash===last)return; last=location.hash; state.q=new URLSearchParams(location.hash.split('?')[1]||'').get('q')||''; state.city=new URLSearchParams(location.hash.split('?')[1]||'').get('city')||''; shell();}
-  window.addEventListener('hashchange',()=>setTimeout(sync,0)); setTimeout(sync,0);
+  function shell(){app.innerHTML=`<div class="lc-page"><div class="lc-container"><section class="lc-search"><div class="lc-search-row"><label class="lc-search-box"><span>⌕</span><input id="locly-q" placeholder="Que recherchez-vous ?" value="${esc(state.q)}"></label><label class="lc-search-box location"><span>⌖</span><input id="locly-city" placeholder="Ville ou code postal" value="${esc(state.city)}"><button id="locly-geo" type="button">◎</button></label><button id="locly-submit" class="lc-button primary">Rechercher</button></div><div class="lc-category-row">${cats.map(c=>`<button class="lc-cat ${state.category===c[0]?'active':''}" data-cat="${esc(c[0])}"><span>${c[1]}</span>${esc(c[0])}</button>`).join('')}</div></section><div class="lc-toolbar"><div><h1>Toutes les annonces</h1><p id="locly-count">Chargement…</p></div><div class="lc-toolbar-actions"><button id="locly-filter" class="lc-button secondary">☷ Filtres</button><select id="locly-sort"><option value="recent">Plus récentes</option><option value="price_asc">Prix croissant</option><option value="price_desc">Prix décroissant</option><option value="rating">Meilleures notes</option></select></div></div><div class="lc-layout"><aside id="locly-filters" class="lc-filter-panel"><div class="lc-filter-title">Filtres <button id="locly-close">×</button></div><label>Catégorie<select id="locly-category">${cats.map(c=>`<option ${state.category===c[0]?'selected':''}>${esc(c[0])}</option>`).join('')}</select></label><label>Ville<input id="locly-filter-city" value="${esc(state.city)}" placeholder="Ville ou code postal"></label><label>Prix / jour<div class="lc-price-range"><input id="locly-min" type="number" value="${esc(state.min)}" placeholder="Min"><input id="locly-max" type="number" value="${esc(state.max)}" placeholder="Max"></div></label><button id="locly-apply" class="lc-button primary full">Afficher les résultats</button></aside><section class="lc-results"><div id="locly-grid" class="lc-grid"></div></section></div></div></div>`;bind();load()}
+  function bind(){document.querySelector('#locly-submit').onclick=apply;document.querySelector('#locly-filter').onclick=()=>document.querySelector('#locly-filters').classList.add('open');document.querySelector('#locly-close').onclick=()=>document.querySelector('#locly-filters').classList.remove('open');document.querySelector('#locly-apply').onclick=apply;document.querySelector('#locly-sort').onchange=e=>{state.sort=e.target.value;render()};document.querySelector('#locly-category').onchange=e=>{state.category=e.target.value;render()};document.querySelectorAll('.lc-cat').forEach(b=>b.onclick=()=>{state.category=b.dataset.cat;shell()});['locly-q','locly-city'].forEach(id=>document.querySelector('#'+id).onkeydown=e=>{if(e.key==='Enter')apply()});document.querySelector('#locly-geo').onclick=geo;document.querySelector('#locly-filter-city').oninput=e=>state.city=e.target.value;document.querySelector('#locly-min').oninput=e=>state.min=e.target.value;document.querySelector('#locly-max').oninput=e=>state.max=e.target.value}
+  function apply(){state.q=document.querySelector('#locly-q').value.trim();state.city=document.querySelector('#locly-city').value.trim()||document.querySelector('#locly-filter-city').value.trim();state.category=document.querySelector('#locly-category').value;state.min=document.querySelector('#locly-min').value;state.max=document.querySelector('#locly-max').value;document.querySelector('#locly-filters').classList.remove('open');render()}
+  async function load(){try{const d=await api('/listings');listings=d.listings||[];render()}catch(e){document.querySelector('#locly-grid').innerHTML=`<div class="lc-empty"><h2>Impossible de charger les annonces</h2><p>${esc(e.message)}</p><button class="lc-button primary" onclick="location.reload()">Réessayer</button></div>`}}
+  function geo(){if(!navigator.geolocation)return alert('Géolocalisation indisponible.');navigator.geolocation.getCurrentPosition(async p=>{try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}&zoom=10&addressdetails=1`,{headers:{'Accept-Language':'fr'}});const d=await r.json(),a=d.address||{};state.city=[a.city||a.town||a.village||'',a.postcode||''].filter(Boolean).join(' ');shell()}catch{alert('Impossible de déterminer votre ville.')}},()=>alert('Autorisez la localisation dans votre navigateur.'),{timeout:8000})}
+  window.loclyFav=id=>{fav=fav.includes(id)?fav.filter(x=>x!==id):[...fav,id];localStorage.setItem('locly_favorites',JSON.stringify(fav));render()};window.loclyReset=()=>{state={q:'',city:'',category:'Toutes',min:'',max:'',sort:'recent'};shell()};
+  function isHome(){return !location.hash||location.hash==='#'||location.hash.startsWith('#/home')};let last='';function sync(){if(!isHome()||location.hash===last)return;last=location.hash;const q=new URLSearchParams(location.hash.split('?')[1]||'');state.q=q.get('q')||'';state.city=q.get('city')||'';shell()}window.addEventListener('hashchange',()=>setTimeout(sync,0));setTimeout(sync,0);
 })();
