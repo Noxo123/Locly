@@ -1,14 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Locly Administration</title>
+<style>
+:root{--locly-navy:#0F3554;--locly-teal:#1AA696;--locly-slate:#5A7182;--locly-light-gray:#D0D7DE;--locly-bg:#F8F9FA;--white:#fff;--red:#c0392b}
+*{box-sizing:border-box}body{margin:0;background:var(--locly-bg);color:var(--locly-navy);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:flex;min-height:100vh}.sidebar{width:250px;background:var(--locly-navy);color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh}.brand{font-size:25px;font-weight:900;padding:8px 10px 25px}.brand span{color:#6dd8ca}.nav{display:grid;gap:7px}.nav button{border:0;background:transparent;color:#dce9f0;text-align:left;padding:12px 13px;border-radius:10px;cursor:pointer;font:inherit}.nav button:hover,.nav button.active{background:rgba(255,255,255,.12);color:#fff}.main{flex:1;min-width:0;padding:28px;max-width:1500px;margin:auto;width:100%}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:25px}.eyebrow{color:var(--locly-teal);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.top h1{margin:5px 0;font-size:30px}.subtitle{color:var(--locly-slate)}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}.metric,.card{background:var(--white);border:1px solid var(--locly-light-gray);border-radius:16px;box-shadow:0 5px 18px rgba(15,53,84,.06)}.metric{padding:18px}.metric .icon{font-size:22px;margin-bottom:10px}.metric span{display:block;color:var(--locly-slate);font-size:13px}.metric strong{display:block;font-size:28px;margin-top:3px}.card{margin-bottom:18px}.card-head{padding:18px 20px;border-bottom:1px solid #edf0f2;display:flex;justify-content:space-between;align-items:center}.card-head h2{margin:0;font-size:18px}.card-body{padding:20px}.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.quick .btn{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left}.quick small{color:var(--locly-slate)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.input,.select{border:1px solid var(--locly-light-gray);border-radius:10px;padding:11px 12px;background:#fff;color:var(--locly-navy);font:inherit}.input{min-width:220px;flex:1}.btn{border:1px solid var(--locly-light-gray);background:#fff;color:var(--locly-navy);padding:9px 12px;border-radius:9px;cursor:pointer;font:inherit}.btn:hover{border-color:var(--locly-teal)}.btn.primary{background:var(--locly-teal);border-color:var(--locly-teal);color:#fff}.btn.danger{background:#fff5f4;border-color:#efc3bd;color:var(--red)}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th,.table td{padding:12px 10px;border-bottom:1px solid #edf0f2;text-align:left;vertical-align:top}.table th{font-size:12px;color:var(--locly-slate);text-transform:uppercase;letter-spacing:.04em}.pill{display:inline-block;border-radius:999px;padding:4px 9px;background:#e7f7f4;color:#087f72;font-size:12px;font-weight:700}.pill.red{background:#fff0ee;color:var(--red)}.empty{padding:30px!important;text-align:center!important;color:var(--locly-slate)}.alert.red{padding:15px;border-radius:10px;background:#fff0ee;color:#8e2c22}.actions{display:flex;gap:7px;flex-wrap:wrap}
+@media(max-width:900px){.sidebar{width:210px}.metrics{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.layout{display:block}.sidebar{width:100%;height:auto;position:static}.nav{grid-template-columns:repeat(2,1fr)}.main{padding:16px}.top{display:block}.metrics,.quick{grid-template-columns:1fr}.table{min-width:650px}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"><div class="brand">L<span>o</span>cly <small style="font-size:11px;font-weight:600">ADMIN</small></div><nav class="nav">
+<button data-page="overview" class="active" onclick="show('overview',this)">📊 Vue générale</button>
+<button data-page="users" onclick="show('users',this)">👥 Utilisateurs</button>
+<button data-page="reports" onclick="show('reports',this)">🚨 Signalements</button>
+<button data-page="ips" onclick="show('ips',this)">🛡️ Sécurité & IP</button>
+<button data-page="ledger" onclick="show('ledger',this)">💶 Finance</button>
+<button data-page="audit" onclick="show('audit',this)">📜 Audit</button>
+<button data-page="presence" onclick="show('presence',this)">🟢 Présence</button>
+</nav></aside>
+<main class="main"><header class="top"><div><div class="eyebrow">Locly Administration</div><h1 id="title">Vue générale</h1><div id="subtitle" class="subtitle">Pilotage de la marketplace Locly</div></div><button class="btn" onclick="refresh()">↻ Actualiser</button></header><section id="content"></section></main>
+</div>
+<script>
 'use strict';
 const token=localStorage.getItem('locly_token')||localStorage.getItem('token');
 const content=document.getElementById('content'),title=document.getElementById('title'),subtitle=document.getElementById('subtitle');
 const ADMIN_API=`${location.protocol}//${location.hostname}:3001`;
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const money=v=>Number(v||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
-async function api(path,options={}){if(!token)throw new Error('Session administrateur absente. Reconnecte-toi.');const r=await fetch(ADMIN_API+'/api/admin'+path,{...options,headers:{...(options.headers||{}),Authorization:'Bearer '+token,'Content-Type':'application/json'}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Erreur serveur');return d}
+async function api(path,options={}){if(!token)throw new Error('Session administrateur absente. Reconnecte-toi.');const r=await fetch(ADMIN_API+'/api/admin'+path,{...options,headers:{...(options.headers||{}),Authorization:'Bearer '+token,'Content-Type':'application/json'}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||`Erreur serveur (${r.status})`);return d}
 function setPage(n,d){title.textContent=n;subtitle.textContent=d}
 function setActive(b){document.querySelectorAll('.nav button[data-page]').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active')}
 function fail(e){content.innerHTML='<div class="card"><div class="card-body"><div class="alert red"><b>Erreur</b><br>'+esc(e.message)+'</div><button class="btn primary" onclick="refresh()">Réessayer</button></div></div>'}
-async function show(page,btn){setActive(btn);try{const pages={overview,users,reports,ips,ledger,audit,presence};if(!pages[page])throw new Error('Section inconnue');await pages[page]()}catch(e){fail(e)}}
+async function show(page,btn){setActive(btn||document.querySelector(`.nav button[data-page="${page}"]`));try{const pages={overview,users,reports,ips,ledger,audit,presence};if(!pages[page])throw new Error('Section inconnue');await pages[page]()}catch(e){fail(e)}}
 async function overview(){setPage('Vue générale','Pilotage de la marketplace Locly');const x=await api('/overview');content.innerHTML=`<div class="metrics"><div class="metric"><div class="icon">👥</div><span>Utilisateurs</span><strong>${Number(x.users||0)}</strong></div><div class="metric"><div class="icon">🟢</div><span>Actifs</span><strong>${Number(x.active||0)}</strong></div><div class="metric"><div class="icon">🚫</div><span>Suspendus</span><strong>${Number(x.suspended||0)}</strong></div><div class="metric"><div class="icon">📦</div><span>Annonces</span><strong>${Number(x.listings||0)}</strong></div><div class="metric"><div class="icon">🟢</div><span>En ligne</span><strong>${Number(x.online||0)}</strong></div></div><div class="card"><div class="card-head"><h2>⚡ Centre de contrôle</h2><span class="pill">RBAC actif</span></div><div class="card-body"><div class="quick"><button class="btn" onclick="show('users')"><b>👥 Utilisateurs</b><small>Comptes, rôles et modération</small></button><button class="btn" onclick="show('reports')"><b>🚨 Signalements</b><small>Litiges et modération</small></button><button class="btn" onclick="show('ips')"><b>🛡️ Sécurité & IP</b><small>Prévention et contrôle réseau</small></button><button class="btn" onclick="show('presence')"><b>🟢 Présence</b><small>Activité en temps réel</small></button></div></div></div>`}
 let cachedUsers=[];
 async function users(){setPage('Utilisateurs','Comptes, rôles et modération');const x=await api('/users');cachedUsers=x.users||[];renderUsers(cachedUsers)}
@@ -27,3 +53,6 @@ async function audit(){setPage('Journal d’audit','Traçabilité des actions ad
 async function presence(){setPage('Présence','Activité en temps réel');const r=await fetch('/api/presence/stats',{headers:{Authorization:'Bearer '+token}}),x=await r.json().catch(()=>({}));if(!r.ok)throw new Error(x.error||'Présence indisponible');content.innerHTML=`<div class="metrics"><div class="metric"><div class="icon">🟢</div><span>En ligne</span><strong>${Number(x.online||0)}</strong></div><div class="metric"><div class="icon">👤</div><span>Comptes</span><strong>${Number(x.authenticated||0)}</strong></div><div class="metric"><div class="icon">👀</div><span>Visiteurs</span><strong>${Number(x.guests||0)}</strong></div><div class="metric"><div class="icon">📅</div><span>Aujourd’hui</span><strong>${Number(x.today||0)}</strong></div></div><div class="card"><div class="card-body"><p>Présence mise à jour par heartbeat.</p><button class="btn primary" onclick="presence()">↻ Actualiser</button></div></div>`}
 function refresh(){show('overview')}
 show('overview');
+</script>
+</body>
+</html>
