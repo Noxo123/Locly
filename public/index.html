@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0F3554">
-<meta name="description" content="Locly — marketplace de location de matériel près de chez vous.">
+<meta name="description" content="Locly — location de matériel entre particuliers et professionnels.">
 <title>Locly — Louez en toute confiance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,27 +12,36 @@
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<div class="announcement">🛡️ Location vérifiée · Paiements sécurisés · Avis issus de vraies locations</div>
 <header class="topbar">
   <div class="nav-inner">
     <a class="brand" href="#/home" aria-label="Locly accueil"><span class="brand-mark">L</span><span>locly</span></a>
+    <div class="header-search" role="search">
+      <span>⌕</span><input id="header-search-input" type="search" placeholder="Rechercher sur Locly" autocomplete="off" aria-label="Rechercher sur Locly">
+    </div>
+    <div class="header-location"><span>⌖</span><span id="header-city">Ma localisation</span></div>
     <nav class="main-nav" aria-label="Navigation principale">
-      <a href="#/home">Accueil</a><a href="#/browse">Explorer</a><a href="#/publish">Publier</a><a href="#/how">Comment ça marche</a>
+      <a href="#/publish" class="publish-nav">＋ Déposer une annonce</a>
+      <a href="#/dashboard">Mon espace</a>
       <a href="#/admin" class="admin-link" hidden>Administration</a>
     </nav>
     <div id="auth-actions" class="auth-actions"></div>
   </div>
 </header>
+<nav class="category-bar" aria-label="Catégories">
+  <div class="category-inner">
+    <a href="#/browse">Tout</a><a href="#/browse?category=Outillage">🛠 Outillage</a><a href="#/browse?category=Événementiel">🎪 Événementiel</a><a href="#/browse?category=Camping">⛺ Camping</a><a href="#/browse?category=Jardin">🌱 Jardin</a><a href="#/browse?category=Mobilier">🪑 Mobilier</a><a href="#/browse?category=Véhicule">🚐 Véhicules</a><a href="#/browse?category=Sono">🔊 Sono</a><a href="#/browse?category=Sport">🚲 Sport</a><a href="#/browse?category=Maison">🏠 Maison</a><a href="#/browse?category=Autre">📦 Autre</a>
+  </div>
+</nav>
 <main id="app" class="app-shell"></main>
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="footer-grid">
-      <div><a class="brand brand-footer" href="#/home"><span class="brand-mark">L</span><span>locly</span></a><p class="footer-description">La marketplace locale pour louer du matériel simplement et en confiance.</p></div>
+      <div><a class="brand brand-footer" href="#/home"><span class="brand-mark">L</span><span>locly</span></a><p class="footer-description">Location de matériel près de chez vous.</p></div>
       <div class="footer-column"><h3>Explorer</h3><a href="#/browse">Toutes les annonces</a><a href="#/browse?category=Événementiel">Événementiel</a><a href="#/browse?category=Outillage">Outillage</a><a href="#/browse?category=Camping">Camping</a></div>
-      <div class="footer-column"><h3>Locly</h3><a href="#/publish">Publier une annonce</a><a href="#/dashboard">Mon espace</a><a href="#/how">Comment ça marche</a><a href="#/admin" class="admin-link" hidden>Administration</a></div>
-      <div class="footer-column"><h3>Confiance</h3><a href="#/how">Protection</a><a href="#/how">Sécurité</a><a href="#/how">Aide</a></div>
+      <div class="footer-column"><h3>Locly</h3><a href="#/publish">Déposer une annonce</a><a href="#/dashboard">Mon espace</a><a href="#/how">Comment ça marche</a><a href="#/admin" class="admin-link" hidden>Administration</a></div>
+      <div class="footer-column"><h3>Aide</h3><a href="#/how">Protection</a><a href="#/how">Sécurité</a><a href="#/how">Contact</a></div>
     </div>
-    <div class="footer-bottom"><span>© 2026 Locly · Louez en toute confiance</span><div class="footer-bottom-links"><a href="#/how">Conditions</a><a href="#/how">Confidentialité</a><a href="#/how">Contact</a></div></div>
+    <div class="footer-bottom"><span>© 2026 Locly</span><div class="footer-bottom-links"><a href="#/how">Conditions</a><a href="#/how">Confidentialité</a></div></div>
   </div>
 </footer>
 <script src="/app.js"></script>
@@ -41,5 +50,13 @@
 <script src="/admin-entry.js"></script>
 <script src="/presence.js"></script>
 <script src="/marketplace-home.js"></script>
+<script>
+(() => {
+  const input=document.getElementById('header-search-input');
+  const city=document.getElementById('header-city');
+  input?.addEventListener('keydown',e=>{if(e.key==='Enter'){const q=input.value.trim();location.hash=q?'#/browse?q='+encodeURIComponent(q):'#/browse';}});
+  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(async p=>{try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p.coords.latitude}&lon=${p.coords.longitude}&zoom=10&addressdetails=1`,{headers:{'Accept-Language':'fr'}});const d=await r.json(),a=d.address||{};city.textContent=a.city||a.town||a.village||a.postcode||'Ma localisation';}catch{}},()=>{}, {timeout:6000});}
+})();
+</script>
 </body>
 </html>
