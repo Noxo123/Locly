@@ -47,6 +47,17 @@ CREATE TABLE IF NOT EXISTS admin_actions (
  reason TEXT,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS presence_sessions (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ visitor_id TEXT NOT NULL UNIQUE,
+ user_id INTEGER,
+ ip TEXT NOT NULL,
+ user_agent TEXT,
+ first_seen TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ last_seen TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_presence_last_seen ON presence_sessions(last_seen);
+CREATE INDEX IF NOT EXISTS idx_presence_ip ON presence_sessions(ip);
 `);
 
 function json(res, status, body) { const out = JSON.stringify(body); res.writeHead(status, {'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Authorization,Content-Type','Access-Control-Allow-Methods':'GET,POST,PATCH,OPTIONS'}); res.end(out); }
@@ -55,18 +66,43 @@ function auth(req,res,next){ const h=req.headers.authorization||''; if(!h.starts
 function admin(req,res,next){ if(!['admin','superadmin','moderator','finance'].includes(req.user.role)) return json(res,403,{error:'Accès administrateur refusé'}); next(); }
 function body(req){return new Promise((resolve,reject)=>{let s='';req.on('data',c=>{s+=c;if(s.length>1000000) req.destroy();});req.on('end',()=>{try{resolve(s?JSON.parse(s):{})}catch{reject(new Error('JSON invalide'))}});});}
 function ip(req){return (req.headers['x-forwarded-for']||req.socket.remoteAddress||'').split(',')[0].trim().replace(/^::ffff:/,'');}
+function optionalUser(req){const h=req.headers.authorization||'';if(!h.startsWith('Bearer '))return null;try{const u=jwt.verify(h.slice(7),JWT_SECRET);return db.prepare('SELECT id,status FROM users WHERE id=?').get(u.id)?.status==='active'?u.id:null}catch{return null}}
+function cleanupPresence(){db.prepare("DELETE FROM presence_sessions WHERE last_seen < datetime('now','-2 minutes')").run()}
 
 const server=http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS') return json(res,204,{});
- if(!req.url.startsWith('/api/admin')) return json(res,404,{error:'Not found'});
  try{
-  auth(req,res,()=>{}); if(!req.user) return; admin(req,res,()=>{}); if(!['admin','superadmin','moderator','finance'].includes(req.user.role)) return;
+  if(req.method==='POST'&&req.url==='/api/presence'){
+   const b=await body(req); const visitorId=String(b.visitorId||'').trim();
+   if(!visitorId||visitorId.length>100) return json(res,400,{error:'visitorId requis'});
+   cleanupPresence();
+   const userId=optionalUser(req); const visitorIp=ip(req); const ua=String(req.headers['user-agent']||'').slice(0,500);
+   db.prepare(`INSERT INTO presence_sessions(visitor_id,user_id,ip,user_agent,first_seen,last_seen) VALUES(?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+     ON CONFLICT(visitor_id) DO UPDATE SET user_id=excluded.user_id,ip=excluded.ip,user_agent=excluded.user_agent,last_seen=CURRENT_TIMESTAMP`).run(visitorId,userId,visitorIp,ua);
+   return json(res,200,{ok:true});
+  }
+  if(req.method==='POST'&&req.url==='/api/presence/leave'){
+   const b=await body(req); const visitorId=String(b.visitorId||'').trim(); if(visitorId) db.prepare('DELETE FROM presence_sessions WHERE visitor_id=?').run(visitorId); return json(res,200,{ok:true});
+  }
+  if(req.method==='GET'&&req.url==='/api/presence/stats'){
+   cleanupPresence();
+   const online=db.prepare("SELECT COUNT(*) n FROM presence_sessions WHERE last_seen >= datetime('now','-90 seconds')").get().n;
+   const usersOnline=db.prepare("SELECT COUNT(*) n FROM presence_sessions WHERE user_id IS NOT NULL AND last_seen >= datetime('now','-90 seconds')").get().n;
+   const visitorsOnline=db.prepare("SELECT COUNT(*) n FROM presence_sessions WHERE user_id IS NULL AND last_seen >= datetime('now','-90 seconds')").get().n;
+   const today=db.prepare("SELECT COUNT(*) n FROM presence_sessions WHERE first_seen >= datetime('now','start of day')").get().n;
+   const ips=db.prepare("SELECT ip,COUNT(*) count,MAX(last_seen) last_seen FROM presence_sessions WHERE last_seen >= datetime('now','-90 seconds') GROUP BY ip ORDER BY count DESC LIMIT 100").all();
+   return json(res,200,{online,usersOnline,visitorsOnline,todayVisitors:today,ips});
+  }
+  if(!req.url.startsWith('/api/admin')) return json(res,404,{error:'Not found'});
+  let denied=false; auth(req,res,()=>{}); if(!req.user) return; admin(req,res,()=>{}); if(!['admin','superadmin','moderator','finance'].includes(req.user.role)) return;
   const url=new URL(req.url,'http://localhost'); const p=url.pathname.replace('/api/admin','');
   if(req.method==='GET'&&p==='/overview'){
+   cleanupPresence();
    const users=db.prepare('SELECT COUNT(*) n FROM users').get().n, active=db.prepare("SELECT COUNT(*) n FROM users WHERE status='active'").get().n, suspended=db.prepare("SELECT COUNT(*) n FROM users WHERE status='suspended'").get().n;
    const listings=db.prepare('SELECT COUNT(*) n FROM listings').get().n, bookings=db.prepare('SELECT COUNT(*) n FROM bookings').get().n, reports=db.prepare("SELECT COUNT(*) n FROM reports WHERE status='open'").get().n;
    const money=db.prepare('SELECT COALESCE(SUM(amount),0) total FROM money_ledger WHERE status=\'completed\'').get().total;
-   return json(res,200,{users,active,suspended,listings,bookings,openReports:reports,processedMoney:money});
+   const online=db.prepare("SELECT COUNT(*) n FROM presence_sessions WHERE last_seen >= datetime('now','-90 seconds')").get().n;
+   return json(res,200,{users,active,suspended,listings,bookings,openReports:reports,processedMoney:money,online});
   }
   if(req.method==='GET'&&p==='/users'){
    const q=(url.searchParams.get('q')||'').trim(); const status=url.searchParams.get('status')||'';
